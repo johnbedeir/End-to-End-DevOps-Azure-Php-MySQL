@@ -21,9 +21,9 @@ resource "azurerm_mssql_server" "sql_server" {
 
 # Azure SQL Database
 resource "azurerm_mssql_database" "sql_database" {
-  name                = "${var.database_name}"
-  server_id           = azurerm_mssql_server.sql_server.id
-  sku_name            = "GP_Gen5_2"
+  name      = var.database_name
+  server_id = azurerm_mssql_server.sql_server.id
+  sku_name  = "GP_Gen5_2"
 
   depends_on = [
     azurerm_mssql_server.sql_server
@@ -76,4 +76,12 @@ resource "azurerm_private_dns_a_record" "sql_dns_record" {
   zone_name           = azurerm_private_dns_zone.sql_private_dns.name
   ttl                 = 300
   records             = [azurerm_private_endpoint.sql_private_endpoint.private_service_connection[0].private_ip_address]
+}
+
+resource "azurerm_sql_firewall_rule" "allow_connection" {
+  name                = "AllowMyIP"
+  resource_group_name = azurerm_resource_group.aks.name
+  server_name         = azurerm_mssql_server.sql_server.name
+  start_ip_address    = "0.0.0.0"
+  end_ip_address      = "255.255.255.255"
 }

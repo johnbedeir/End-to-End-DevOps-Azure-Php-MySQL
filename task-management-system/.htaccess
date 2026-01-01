@@ -1,3 +1,13 @@
+# Enable URL rewriting
 RewriteEngine On
-RewriteRule ^login$ login.php [NC,L]
-RewriteRule ^register$ register.php [NC,L]
+
+# Set the default index file
+DirectoryIndex index.php index.html
+
+# Prevent directory listing
+Options -Indexes
+
+# Allow access to static files
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico)$">
+    Require all granted
+</FilesMatch>

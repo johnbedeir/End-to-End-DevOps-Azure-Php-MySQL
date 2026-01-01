@@ -11,9 +11,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    if (checkLogin($username, $password)) {
-        // Login successful, set session variable and redirect to dashboard
-        $_SESSION['user_id'] = $username;
+    $userId = checkLogin($username, $password);
+    if ($userId !== false) {
+        // Login successful, set session variables and redirect to dashboard
+        $_SESSION['user_id'] = $userId; // Store the numeric user ID
+        $_SESSION['username'] = $username; // Store username for display
         header("Location: dashboard.php");
         exit();
     } else {

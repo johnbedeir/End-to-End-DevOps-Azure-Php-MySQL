@@ -14,28 +14,42 @@ spec:
         app: users-service
     spec:
       containers:
-      - name: users-service
-        image: cluster1devacr.azurecr.io/tms-users-img:latest
-        ports:
-        - containerPort: 80
-        env:
-          - name: DB_HOST
-            valueFrom:
-              secretKeyRef:
-                name: rds-endpoint
-                key: endpoint
-          - name: DB_USER
-            valueFrom:
-              secretKeyRef:
-                name: rds-username
-                key: username
-          - name: DB_PASS
-            valueFrom:
-              secretKeyRef:
-                name: rds-password
-                key: password
-          - name: DB_DATABASE
-            value: task_manager
+        - name: users-service
+          image: cluster1devacr.azurecr.io/tms-users-img:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: sql-endpoint
+                  key: endpoint
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-username
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-name
+                  key: name
+            - name: DB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: db-name
+                  key: name
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: db-port
+                  key: port
 ---
 apiVersion: v1
 kind: Service

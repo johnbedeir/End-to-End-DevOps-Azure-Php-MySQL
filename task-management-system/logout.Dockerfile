@@ -23,8 +23,6 @@ RUN apt-get update && apt-get install -y\
     unzip \
     && docker-php-ext-configure gd \
     && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install pdo_mysql \
-    && docker-php-ext-install mysqli \
     && docker-php-ext-install zip \
     && docker-php-source delete
 
@@ -36,6 +34,8 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN composer install --no-dev --optimize-autoloader
 
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+RUN chown -R www-data:www-data /var/www/html
 
 # Expose port for Apache
 EXPOSE 80

@@ -14,14 +14,19 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// User's username for the welcome message
-$username = $_SESSION['user_id'];
+// Get user ID and username from session
+$userId = $_SESSION['user_id'] ?? null;
+$username = $_SESSION['username'] ?? 'User';
+
+if (!$userId) {
+    header("Location: login.php");
+    exit();
+}
 
 // Fetch tasks from the database
 $stmt = $conn->prepare("SELECT id, task FROM tasks WHERE user_id = ? ORDER BY id DESC");
-$stmt->bind_param("i", $userId);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt->execute([$userId]);
+$tasks = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -60,11 +65,16 @@ $result = $stmt->get_result();
                     <th>Actions</th>
                 </tr>
                 <!-- PHP code to loop through tasks and display them -->
-                <?php while ($row = $result->fetch_assoc()): ?>
+                <?php if (empty($tasks)): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($row['title']); ?></td>
-                        <td><?php echo htmlspecialchars($row['description']); ?></td>
-                        <td>
+                        <td colspan="3">No tasks yet. Add your first task above!</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($tasks as $row): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($row['task']); ?></td>
+                            <td><?php echo htmlspecialchars($row['task']); ?></td>
+                            <td>
                             <!-- Replace '#' with the actual script for marking a task as completed -->
                             <form action="#" method="post">
                                 <input type="hidden" name="task_id" value="<?php echo $row['id']; ?>">
@@ -77,7 +87,8 @@ $result = $stmt->get_result();
                             </form>
                         </td>
                     </tr>
-                <?php endwhile; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </table>
         </div>
     </main>
