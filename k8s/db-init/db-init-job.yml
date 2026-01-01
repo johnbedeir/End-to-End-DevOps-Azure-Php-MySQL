@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-script
+  namespace: tms-app
+data:
+  init-db.sql: |
+    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')
+    BEGIN
+        CREATE TABLE users (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            username VARCHAR(50) NOT NULL,
+            password VARCHAR(255) NOT NULL
+        );
+    END
+
+    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tasks')
+    BEGIN
+        CREATE TABLE tasks (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            user_id INT,
+            task VARCHAR(255) NOT NULL,
+            due_date DATE,
+            completed BIT DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+    END
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+  namespace: tms-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: sqlcmd
+          image: mcr.microsoft.com/mssql-tools:latest
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # Use the full FQDN from DB_HOST (it should already be the FQDN)
+              SERVER="$DB_HOST"
+              echo "Connecting to server: $SERVER"
+              echo "Database: $DB_NAME"
+              echo "User: $DB_USER"
+              # Test connection first with increased timeout
+              /opt/mssql-tools/bin/sqlcmd \
+                -S "$SERVER,1433" \
+                -U "$DB_USER" \
+                -P "$DB_PASS" \
+                -d "$DB_NAME" \
+                -C \
+                -l 30 \
+                -Q "SELECT 1" || { echo "Connection test failed"; exit 1; }
+              echo "Connection test successful"
+              # Run initialization script
+              /opt/mssql-tools/bin/sqlcmd \
+                -S "$SERVER,1433" \
+                -U "$DB_USER" \
+                -P "$DB_PASS" \
+                -d "$DB_NAME" \
+                -C \
+                -l 30 \
+                -i /scripts/init-db.sql || { echo "Init script failed"; exit 1; }
+              echo "Database initialization completed successfully"
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: sql-endpoint
+                  key: endpoint
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-username
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-name
+                  key: name
+          volumeMounts:
+            - name: init-script
+              mountPath: /scripts
+      volumes:
+        - name: init-script
+          configMap:
+            name: db-init-script
+      restartPolicy: OnFailure
+  backoffLimit: 3
