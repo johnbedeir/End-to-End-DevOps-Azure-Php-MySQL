@@ -1,0 +1,89 @@
+name: Build and Push Docker Images to ACR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "task-management-system/**"
+      - ".github/workflows/build-and-push.yml"
+  workflow_dispatch:
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  RESOURCE_GROUP: cluster-1-dev-rg
+  ACR_NAME: cluster1devacr
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./task-management-system
+          file: ./task-management-system/frontend.Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/tms-frontend-img:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_NAME }}.azurecr.io/tms-frontend-img:latest
+          cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-frontend-img:buildcache
+          cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-frontend-img:buildcache,mode=max
+
+      - name: Build and push users-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./task-management-system
+          file: ./task-management-system/users.Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/tms-users-img:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_NAME }}.azurecr.io/tms-users-img:latest
+          cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-users-img:buildcache
+          cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-users-img:buildcache,mode=max
+
+      - name: Build and push logout-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./task-management-system
+          file: ./task-management-system/logout.Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/tms-logout-img:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_NAME }}.azurecr.io/tms-logout-img:latest
+          cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-logout-img:buildcache
+          cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/tms-logout-img:buildcache,mode=max
+
+      - name: Verify images in ACR
+        run: |
+          echo "Verifying images were pushed successfully..."
+          az acr repository show-tags --name ${{ env.ACR_NAME }} --repository tms-frontend-img --orderby time_desc --top 1
+          az acr repository show-tags --name ${{ env.ACR_NAME }} --repository tms-users-img --orderby time_desc --top 1
+          az acr repository show-tags --name ${{ env.ACR_NAME }} --repository tms-logout-img --orderby time_desc --top 1
