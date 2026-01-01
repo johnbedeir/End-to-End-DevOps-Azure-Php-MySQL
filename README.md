@@ -104,6 +104,31 @@ This will:
 4. Clean up the resource group
 5. Remove the service principal
 
+## GitHub Actions CI/CD
+
+The project includes a GitHub Actions workflow (`.github/workflows/build-and-push.yml`) that automatically builds and pushes Docker images to ACR when code is pushed to the `main` branch.
+
+### Setting up GitHub Secrets
+
+Before the workflow can run, you need to add these secrets to your GitHub repository:
+
+1. Go to your GitHub repository
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret** and add:
+
+   - **Name:** `AZURE_CLIENT_ID`
+
+     - **Value:** The Client ID from your service principal (shown when you run `run_me_first.sh`)
+
+   - **Name:** `AZURE_TENANT_ID`
+
+     - **Value:** Your Azure Tenant ID (shown when you run `run_me_first.sh`)
+
+   - **Name:** `AZURE_SUBSCRIPTION_ID`
+     - **Value:** Your Azure Subscription ID (from `subscription.txt`)
+
+**Important:** These must be added as **Secrets**, not Environment Variables.
+
 ## Notes
 
 - The application uses Azure SQL Server (not MySQL) despite the project name
