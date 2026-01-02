@@ -37,6 +37,29 @@ This project deploys a PHP-based Task Management System on Azure using AKS (Azur
 
 This script creates an Azure service principal with Contributor role and sets up federated credentials for GitHub Actions.
 
+**After running this script, you'll see output with:**
+
+- Client ID
+- Client Secret
+- Tenant ID
+
+### Step 1.5: Configure Terraform Variables
+
+Copy the example Terraform variables file and fill in the values from `run_me_first.sh`:
+
+```bash
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+```
+
+Then edit `terraform/terraform.tfvars` and replace the placeholder values:
+
+- `subscription_id`: Your Azure subscription ID (from `subscription.txt`)
+- `client_id`: The Client ID shown when you ran `run_me_first.sh`
+- `client_secret`: The Client Secret shown when you ran `run_me_first.sh`
+- `tenant_id`: The Tenant ID shown when you ran `run_me_first.sh`
+- `location`: Your preferred Azure region (e.g., "East US 2")
+- `db_username`: Your desired SQL database admin username (e.g., "sqladmin")
+
 ### Step 2: Build and Deploy
 
 After the service principal is created, run the build script:
@@ -74,6 +97,7 @@ After the build completes, you'll see output with:
 │   ├── aks.tf            # AKS cluster configuration
 │   ├── acr.tf            # Container registry configuration
 │   ├── sql-db.tf         # SQL database configuration
+│   ├── terraform.tfvars.example  # Example Terraform variables (copy to terraform.tfvars)
 │   └── ...
 ├── task-management-system/  # PHP application source code
 │   ├── pages/            # PHP pages (login, register, dashboard)
